@@ -27,4 +27,4 @@ Open: http://localhost:5000
 
 ## Assets
 
-Your saved files are in `static/RFQ for Test - SOQ -  Perfect Engineers & Consultants - ProjectProcure_files/`.
+Your saved files are in `static/pp_files/`.

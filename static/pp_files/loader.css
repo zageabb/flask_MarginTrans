@@ -1,0 +1,29 @@
+.app-loader {
+  display: box;
+  display: flexbox;
+  display: flex;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  box-orient: vertical;
+  box-direction: normal;
+  flex-direction: column;
+  flex-direction: column;
+  box-align: center;
+  flex-align: center;
+  align-items: center;
+  box-pack: center;
+  flex-pack: center;
+  justify-content: center;
+  background-color: #eb0023;
+}
+
+.app-loader__img {
+  display: block;
+  visibility: hidden;
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+}
