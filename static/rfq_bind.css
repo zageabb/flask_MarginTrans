@@ -1,0 +1,10 @@
+:root { --rfq-accent: #117a37; }
+#rfqEditToggle{
+  position: fixed; right: 18px; bottom: 18px; z-index: 9999;
+  background: #fff; border: 1px solid rgba(0,0,0,.15);
+  border-radius: 999px; box-shadow: 0 8px 20px rgba(0,0,0,.15);
+  padding: 10px 12px; font: 600 12px/1.2 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  cursor: pointer; user-select:none;
+}
+#rfqEditToggle[data-on="1"]{ border-color: rgba(17,122,55,.45); box-shadow: 0 8px 20px rgba(17,122,55,.25); }
+[data-field][contenteditable="true"]{ outline: 2px dashed rgba(17,122,55,.55); outline-offset: 3px; border-radius: 4px; }
