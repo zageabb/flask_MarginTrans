@@ -28,3 +28,17 @@ Open: http://localhost:5000
 ## Assets
 
 Your saved files are in `static/pp_files/`.
+
+## Scope Order Lines (tabs + subtable)
+
+The "Scope Order Lines" area is now driven by SQLite tables:
+
+- `solt_tab` (tab_index, name)
+- `solt_line` (line_no, item, qty, uom, unit_price, line_total, ...)
+
+API:
+- `GET /api/rfq/1/solt` (tabs + grouped lines)
+- `PATCH /api/rfq/1/solt/tab/<tab_index>` rename a tab (double-click tab while in Edit mode)
+- `PATCH /api/rfq/1/solt/line/<line_id>` update a line cell (edit a cell and click away in Edit mode)
+
+The front-end reuses the saved CSS classes (`solt-tabs__tab`, `solt-tabs__tab--active`, etc.) so it still looks like the original UI.
