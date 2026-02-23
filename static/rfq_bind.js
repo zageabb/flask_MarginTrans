@@ -1,7 +1,7 @@
 (function () {
   const RFQ_ID = 1;
   const MARGIN_TAB_KEY = '__margin__';
-  const MARGIN_TAB_LABEL = 'Margin transparency';
+  const MARGIN_TAB_LABEL = 'Margin Transparency';
 
   const API = `/api/rfq/${RFQ_ID}`;
   let editOn = false;
@@ -137,6 +137,14 @@
     });
 
     // Rows for active tab
+    const table = tbody.closest("table");
+    if (activeTab === MARGIN_TAB_KEY) {
+      renderMarginIntoTable(table, tbody, solt.margin_transparency || []);
+      return;
+    } else {
+      restoreSoltHeader(table);
+    }
+
     const rows = (solt.lines && solt.lines[String(activeTab)]) ? solt.lines[String(activeTab)] : (solt.lines && solt.lines[activeTab]) ? solt.lines[activeTab] : [];
     tbody.innerHTML = "";
     if (!rows || rows.length === 0) {
@@ -260,6 +268,63 @@
     container.innerHTML = "";
     container.appendChild(wrap);
   }
+
+  function renderMarginIntoTable(table, tbody, rows) {
+    const thead = table ? table.querySelector("thead") : null;
+    if (!table || !thead || !tbody) return;
+
+    // store original header once so we can restore
+    if (!thead.dataset.origHtml) {
+      thead.dataset.origHtml = thead.innerHTML;
+    }
+
+    // margin header
+    thead.innerHTML = `
+      <tr>
+        <th class="col-line">#</th>
+        <th class="col-item">Item</th>
+        <th class="col-total">Margin %</th>
+      </tr>
+    `;
+
+    tbody.innerHTML = "";
+    const safeRows = Array.isArray(rows) ? rows : [];
+    if (safeRows.length === 0) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 3;
+      td.textContent = "No margin rows.";
+      tr.appendChild(td);
+      tbody.appendChild(tr);
+      return;
+    }
+
+    safeRows.forEach((r, idx) => {
+      const tr = document.createElement("tr");
+      const name = (r && r.name != null) ? String(r.name) : "";
+      const pct = (r && r.percent != null) ? String(r.percent) : "";
+
+      tr.innerHTML = `
+        <td class="col-line" style="background:#eee;">${idx + 1}</td>
+        <td class="col-item">${name}</td>
+        <td class="col-total">
+          <span class="margin-pill">
+            <span class="margin-val" data-name="${name.replaceAll('"','&quot;')}" contenteditable="${editOn ? "true" : "false"}">${pct}</span>%
+          </span>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function restoreSoltHeader(table) {
+    const thead = table ? table.querySelector("thead") : null;
+    if (!thead) return;
+    if (thead.dataset.origHtml) {
+      thead.innerHTML = thead.dataset.origHtml;
+    }
+  }
+
 addToggle();
   hookEdits();
   load();
