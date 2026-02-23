@@ -141,7 +141,7 @@ def create_app() -> Flask:
         for k in grouped:
             grouped[k] = sorted(grouped[k], key=lambda x: (int(x.get("line_no", 0)), int(x.get("id", 0))))
         tabs = sorted(rec.get("tabs", []), key=lambda t: int(t.get("tab_index", 0)))
-        return jsonify({"rfq_id": rfq_id, "tabs": tabs, "lines": grouped})
+        return jsonify({"rfq_id": rfq_id, "tabs": tabs, "lines": grouped, "margin_transparency": rec.get("margin_transparency", [])})
 
     @app.patch("/api/rfq/<int:rfq_id>/solt/tab/<int:tab_index>")
     def patch_solt_tab(rfq_id: int, tab_index: int):
@@ -243,6 +243,59 @@ def create_app() -> Flask:
 
         _save_solt_record(rfq_id, rec)
         return jsonify(line)
+
+
+    @app.patch("/api/rfq/<int:rfq_id>/solt/margin")
+    def patch_margin_transparency(rfq_id: int):
+        """Update margin transparency rows.
+        Payload options:
+          - {"rows": [{"name": "...", "percent": 30}, ...]}  (replace all)
+          - {"name": "Material", "percent": 33}             (upsert one)
+        """
+        payload = request.get_json(force=True, silent=True) or {}
+        rec = _get_solt_record(rfq_id)
+
+        def norm_name(x):
+            return str(x).strip()
+
+        def to_num(x):
+            try:
+                return float(x)
+            except Exception:
+                return None
+
+        rows = rec.get("margin_transparency", [])
+        if "rows" in payload and isinstance(payload["rows"], list):
+            new_rows = []
+            for r in payload["rows"]:
+                if not isinstance(r, dict):
+                    continue
+                n = norm_name(r.get("name", ""))
+                p = to_num(r.get("percent"))
+                if not n or p is None:
+                    continue
+                new_rows.append({"name": n, "percent": p})
+            rec["margin_transparency"] = new_rows
+            _save_solt_record(rfq_id, rec)
+            return jsonify(rec["margin_transparency"])
+
+        name = norm_name(payload.get("name", ""))
+        percent = to_num(payload.get("percent"))
+        if not name or percent is None:
+            return jsonify({"error": "provide name and percent, or rows"}), 400
+
+        # upsert
+        found = False
+        for r in rows:
+            if norm_name(r.get("name", "")) == name:
+                r["percent"] = percent
+                found = True
+                break
+        if not found:
+            rows.append({"name": name, "percent": percent})
+        rec["margin_transparency"] = rows
+        _save_solt_record(rfq_id, rec)
+        return jsonify({"name": name, "percent": percent})
 
     @app.delete("/api/rfq/<int:rfq_id>/solt/line/<int:line_id>")
     def delete_solt_line(rfq_id: int, line_id: int):

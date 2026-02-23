@@ -1,5 +1,8 @@
 (function () {
   const RFQ_ID = 1;
+  const MARGIN_TAB_KEY = '__margin__';
+  const MARGIN_TAB_LABEL = 'Margin transparency';
+
   const API = `/api/rfq/${RFQ_ID}`;
   let editOn = false;
   let cache = {};
@@ -194,6 +197,69 @@
     return res.ok;
   }
 
+
+
+  function renderMarginTransparency(container, rows) {
+    const wrap = document.createElement("div");
+    wrap.className = "margin-transparency";
+
+    const table = document.createElement("table");
+    table.className = "solt-table solt-table--margin";
+
+    const thead = document.createElement("thead");
+    thead.innerHTML = `
+      <tr>
+        <th style="width: 48px;"></th>
+        <th>Item</th>
+        <th style="width: 140px;">Margin %</th>
+      </tr>`;
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+    const safeRows = Array.isArray(rows) ? rows : [];
+    safeRows.forEach((r, idx) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="solt-col-idx">${idx + 1}</td>
+        <td class="solt-col-item" data-name="${String(r.name || '').replaceAll('"','&quot;')}">${r.name ?? ""}</td>
+        <td class="solt-col-percent">
+          <span class="margin-pill">
+            <span class="margin-val" contenteditable="${editOn ? "true" : "false"}" data-name="${String(r.name || '').replaceAll('"','&quot;')}">${r.percent ?? ""}</span>%
+          </span>
+        </td>`;
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+
+    const hint = document.createElement("div");
+    hint.className = "margin-hint";
+    hint.textContent = editOn ? "Edit a % value and click away to save." : "Press E / click Edit to change values.";
+    wrap.appendChild(hint);
+
+    // Save on blur
+    wrap.addEventListener("blur", async (ev) => {
+      if (!editOn) return;
+      const t = ev.target;
+      if (!(t instanceof HTMLElement)) return;
+      if (!t.classList.contains("margin-val")) return;
+
+      const name = t.dataset.name || "";
+      const raw = (t.innerText || t.textContent || "").trim().replace("%", "");
+      const pct = Number(raw);
+      if (!name) return;
+      if (Number.isNaN(pct)) return;
+
+      await fetch(`/api/rfq/${RFQ_ID}/solt/margin`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", "Accept": "application/json" },
+        body: JSON.stringify({ name, percent: pct })
+      });
+    }, true);
+
+    container.innerHTML = "";
+    container.appendChild(wrap);
+  }
 addToggle();
   hookEdits();
   load();

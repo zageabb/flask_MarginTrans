@@ -57,6 +57,20 @@
         "data_template": "None"
       }
     ],
-    "next_line_id": 4
+    "next_line_id": 4,
+    "margin_transparency": [
+      {
+        "name": "Material",
+        "percent": 30
+      },
+      {
+        "name": "Labour",
+        "percent": 15
+      },
+      {
+        "name": "3rd Party",
+        "percent": 22
+      }
+    ]
   }
 }
