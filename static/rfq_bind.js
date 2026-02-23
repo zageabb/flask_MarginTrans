@@ -139,7 +139,7 @@
     if (!rows || rows.length === 0) {
       const tr = document.createElement("tr");
       const td = document.createElement("td");
-      td.colSpan = 6;
+      td.colSpan = 8;
       td.textContent = "No lines in this tab.";
       tr.appendChild(td);
       tbody.appendChild(tr);
@@ -151,11 +151,13 @@
       tr.dataset.lineId = r.id;
 
       const tdNo = document.createElement("td");
+      tdNo.className = "solt-cell solt-cell--line_no";
       tdNo.textContent = r.line_no ?? "";
       tr.appendChild(tdNo);
 
       function editableCell(field, value, isNumber=false) {
         const td = document.createElement("td");
+        td.className = "solt-cell solt-cell--" + field;
         td.dataset.lineField = field;
         td.textContent = (value ?? "") + "";
         if (editOn) {
@@ -172,8 +174,10 @@
       }
 
       tr.appendChild(editableCell("item", r.item));
+      tr.appendChild(editableCell("mdf_code", r.mdf_code ?? "3FC"));
+      tr.appendChild(editableCell("data_template", (r.data_template ?? "None")));
       tr.appendChild(editableCell("qty", r.qty, true));
-      tr.appendChild(editableCell("uom", r.uom));
+      tr.appendChild(editableCell("uom", r.uom ?? "ea"));
       tr.appendChild(editableCell("unit_price", r.unit_price, true));
       tr.appendChild(editableCell("line_total", r.line_total, true));
 

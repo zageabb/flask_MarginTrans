@@ -22,7 +22,9 @@
         "unit_price": 100.0,
         "currency": "USD",
         "line_total": 100.0,
-        "note": ""
+        "note": "",
+        "mdf_code": "3FC",
+        "data_template": "None"
       },
       {
         "id": 2,
@@ -35,7 +37,9 @@
         "unit_price": 250.0,
         "currency": "USD",
         "line_total": 500.0,
-        "note": ""
+        "note": "",
+        "mdf_code": "3FC",
+        "data_template": "None"
       },
       {
         "id": 3,
@@ -48,7 +52,9 @@
         "unit_price": 50.0,
         "currency": "USD",
         "line_total": 250.0,
-        "note": ""
+        "note": "",
+        "mdf_code": "3FC",
+        "data_template": "None"
       }
     ],
     "next_line_id": 4

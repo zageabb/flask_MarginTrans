@@ -166,6 +166,8 @@ def create_app() -> Flask:
         payload = request.get_json(force=True, silent=True) or {}
         tab_index = int(payload.get("tab_index", 0))
         item = payload.get("item")
+        mdf_code = payload.get("mdf_code")
+        data_template = payload.get("data_template")
         uom = payload.get("uom")
         currency = payload.get("currency")
         note = payload.get("note", "")
@@ -196,6 +198,8 @@ def create_app() -> Flask:
             "tab_index": tab_index,
             "line_no": line_no,
             "item": item,
+            "mdf_code": mdf_code,
+            "data_template": data_template,
             "qty": qty_f,
             "uom": uom,
             "unit_price": unit_f,
@@ -210,7 +214,7 @@ def create_app() -> Flask:
     @app.patch("/api/rfq/<int:rfq_id>/solt/line/<int:line_id>")
     def patch_solt_line(rfq_id: int, line_id: int):
         payload = request.get_json(force=True, silent=True) or {}
-        allowed = {"item","qty","uom","unit_price","currency","note","line_total","line_no","tab_index"}
+        allowed = {"item","mdf_code","data_template","qty","uom","unit_price","currency","note","line_total","line_no","tab_index"}
         updates = {k: payload[k] for k in payload.keys() if k in allowed}
         if not updates:
             return jsonify({"error": "no valid fields"}), 400

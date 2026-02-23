@@ -138,3 +138,112 @@ div.mat-mdc-autocomplete-panel{width:100%;max-height:256px;visibility:hidden;tra
 }
 #rfqEditToggle[data-on="1"]{ border-color: rgba(17,122,55,.45); box-shadow: 0 8px 20px rgba(17,122,55,.25); }
 [data-field][contenteditable="true"]{ outline: 2px dashed rgba(17,122,55,.55); outline-offset: 3px; border-radius: 4px; }
+
+
+/* ---- Scope Order Lines (SOLT) styling to match original look ---- */
+.solt-tabs {
+  border: 1px solid rgba(0,0,0,.12);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.solt-tabs__header {
+  padding: 10px 12px 0 12px;
+}
+
+.solt-tabs__buttons {
+  list-style: none;
+  display: flex;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+}
+
+.solt-tabs__tab {
+  cursor: pointer;
+  user-select: none;
+  background: #eeeeee;
+  border: 1px solid rgba(0,0,0,.12);
+  border-bottom: 2px solid transparent;
+  border-radius: 4px 4px 0 0;
+  padding: 10px 16px;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.solt-tabs__tab .tab-index {
+  font-weight: 600;
+  margin-right: 6px;
+}
+
+.solt-tabs__tab--active {
+  background: #ffffff;
+  border-bottom-color: #d32f2f; /* red underline like original */
+}
+
+.solt-tabs__content {
+  padding: 0 12px 12px 12px;
+}
+
+.solt-table-wrap {
+  border: 1px solid rgba(0,0,0,.12);
+  border-radius: 4px;
+  overflow-x: auto;     /* show horizontal scroll when needed */
+  background: #fff;
+}
+
+.solt-table-wrap table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 980px;     /* force scroll like original when narrow */
+}
+
+.solt-table-wrap thead th {
+  background: #f3f3f3;
+  font-weight: 600;
+  font-size: 12px;
+  color: rgba(0,0,0,.75);
+}
+
+.solt-table-wrap th,
+.solt-table-wrap td {
+  border: 1px solid rgba(0,0,0,.12);
+  padding: 10px 12px;
+  text-align: left;
+  vertical-align: middle;
+  font-size: 13px;
+}
+
+.solt-cell--line_no {
+  background: #efefef;
+  width: 44px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.solt-cell--qty,
+.solt-cell--unit_price,
+.solt-cell--line_total {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.solt-cell--uom {
+  text-transform: lowercase;
+  white-space: nowrap;
+}
+
+.solt-cell--data_template {
+  white-space: nowrap;
+}
+
+.solt-tabs__total {
+  padding: 8px 12px 12px 12px;
+  text-align: right;
+  font-weight: 700;
+}
+
+/* Full screen button alignment similar to original */
+.fullscreen-btn {
+  margin-top: 8px;
+}
