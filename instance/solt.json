@@ -1,0 +1,56 @@
+{
+  "1": {
+    "tabs": [
+      {
+        "tab_index": 0,
+        "name": "Section 1"
+      },
+      {
+        "tab_index": 1,
+        "name": "Section 2"
+      }
+    ],
+    "lines": [
+      {
+        "id": 1,
+        "rfq_id": 1,
+        "tab_index": 0,
+        "line_no": 1,
+        "item": "Line item A",
+        "qty": 1.0,
+        "uom": "EA",
+        "unit_price": 100.0,
+        "currency": "USD",
+        "line_total": 100.0,
+        "note": ""
+      },
+      {
+        "id": 2,
+        "rfq_id": 1,
+        "tab_index": 0,
+        "line_no": 2,
+        "item": "Line item B",
+        "qty": 2.0,
+        "uom": "EA",
+        "unit_price": 250.0,
+        "currency": "USD",
+        "line_total": 500.0,
+        "note": ""
+      },
+      {
+        "id": 3,
+        "rfq_id": 1,
+        "tab_index": 1,
+        "line_no": 1,
+        "item": "Line item C",
+        "qty": 5.0,
+        "uom": "EA",
+        "unit_price": 50.0,
+        "currency": "USD",
+        "line_total": 250.0,
+        "note": ""
+      }
+    ],
+    "next_line_id": 4
+  }
+}

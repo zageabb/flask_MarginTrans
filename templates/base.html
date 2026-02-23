@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta content="text/html; charset=utf-8" http-equiv="Content-Type"/><link href="https://fonts.gstatic.com/" rel="preconnect"/>
+<title>RFQ for Test - SOQ -  Perfect Engineers &amp; Consultants - ProjectProcure</title>
+<base href="/"><base href="."/>
+<meta content="ie=edge" http-equiv="x-ua-compatible"/>
+<meta content="width=device-width, initial-scale=1" name="viewport"/>
+<script>
+    /**
+     * Prevent loading angular in the hidden ADAL refresh iframe.
+     * This makes the logon/renew of token faster.
+     */
+    // Check if application is loaded in a hidden frame, decode the token and prevent loading angular.
+    (function(){
+      var parent = null;
+      if (window.parent !== window && window.parent.AuthenticationContext) {
+        parent = window.parent;
+      } else if (window.opener && window.opener.AuthenticationContext) {
+        parent = window.opener;
+      }
+      if (parent) {
+        var self = window.parent._adalInstance;
+        var hash = window.location.hash;
+
+       self.handleFrameCallbackRequest(hash, 'iFrame');
+      }
+    })();
+  </script>
+<link href="https://stage.projectprocure.hitachienergy.com/assets/images/favicons/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<link href="https://stage.projectprocure.hitachienergy.com/assets/images/favicons/favicon-32x32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="https://stage.projectprocure.hitachienergy.com/assets/images/favicons/favicon-16x16.png" rel="icon" sizes="16x16" type="image/png"/>
+<link color="#eb0023" href="https://stage.projectprocure.hitachienergy.com/assets/images/favicons/safari-pinned-tab.svg" rel="mask-icon"/>
+<meta content="#eb0023" name="msapplication-TileColor"/>
+
+<link href="https://stage.projectprocure.hitachienergy.com/manifest.webmanifest" rel="manifest"/>
+<meta content="#eb0023" name="theme-color"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="translucent" name="apple-mobile-web-app-status-bar-style"/>
+<link href="{{ url_for('static', filename='pp_files/loader.css') }}" media="all" onload="this.media='all'" rel="stylesheet"/><noscript></noscript>
+<noscript>
+<noscript></noscript>
+<link href="{{ url_for('static', filename='pp_files/styles.24dcb2aed48778fd.css') }}" media="all" onload="this.media='all'" rel="stylesheet"/><noscript></noscript></noscript><link href="{{ url_for('static', filename='app.css') }}" rel="stylesheet"/>
+</head>
+<body>
+  {% block content %}{% endblock %}
+</body>
+</html>

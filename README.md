@@ -42,3 +42,9 @@ API:
 - `PATCH /api/rfq/1/solt/line/<line_id>` update a line cell (edit a cell and click away in Edit mode)
 
 The front-end reuses the saved CSS classes (`solt-tabs__tab`, `solt-tabs__tab--active`, etc.) so it still looks like the original UI.
+
+
+## Template cleanup
+- `templates/base.html` contains the head + linked CSS.
+- `templates/index.html` is now a small Flask template that includes `templates/partials/rfq_page.html`.
+- Any inline CSS previously in the saved page has been moved to `static/app.css`.

@@ -1,196 +1,87 @@
 from __future__ import annotations
+
+import json
 import os
-import sqlite3
-from typing import Any, Dict
-from flask import Flask, jsonify, render_template, request, g
+from typing import Any, Dict, List
+
+from bs4 import BeautifulSoup
+from flask import Flask, jsonify, render_template, request
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
-DB_PATH = os.path.join(BASE_DIR, "instance", "rfq.db")
+DATA_DIR = os.path.join(BASE_DIR, "instance")
+RFQ_JSON = os.path.join(DATA_DIR, "rfq.json")
+SOLT_JSON = os.path.join(DATA_DIR, "solt.json")
 
-ALLOWED_FIELDS = {'status_changed_date', 'updated_date', 'offer_reference', 'offer_submitted', 'creator', 'supplier_comment', 'supplier_submitter_name', 'rfq_number', 'project_cx', 'project_name', 'contact_last_name', 'supplier_submitter_email', 'wbs', 'purchaser', 'title', 'status_updater', 'grand_total', 'commodity_mdf', 'contact_first_name', 'supplier_gtc_comment', 'supplier', 'project_country', 'status', 'offer_date', 'created_date', 'deviations_comments', 'supplier_submitted_date', 'currency', 'first_accepted_date', 'rfq_due_date', 'contact_email', 'valid_until'}
+ALLOWED_FIELDS = {'deviations_comments', 'supplier', 'purchaser', 'supplier_comment', 'offer_reference', 'project_cx', 'rfq_number', 'project_country', 'status', 'status_updater', 'project_name', 'supplier_submitter_name', 'updated_date', 'title', 'status_changed_date', 'contact_email', 'creator', 'commodity_mdf', 'valid_until', 'grand_total', 'rfq_due_date', 'supplier_submitted_date', 'wbs', 'currency', 'offer_submitted', 'supplier_gtc_comment', 'first_accepted_date', 'created_date', 'supplier_submitter_email', 'offer_date', 'contact_last_name', 'contact_first_name'}
 
-SCHEMA_SQL = 'CREATE TABLE IF NOT EXISTS rfq (\n  id INTEGER PRIMARY KEY,\n  rfq_number TEXT,\n  title TEXT,\n  status TEXT,\n  project_name TEXT,\n  project_country TEXT,\n  commodity_mdf TEXT,\n  wbs TEXT,\n  supplier TEXT,\n  contact_first_name TEXT,\n  contact_last_name TEXT,\n  contact_email TEXT,\n  offer_reference TEXT,\n  offer_submitted TEXT,\n  offer_date TEXT,\n  valid_until TEXT,\n  currency TEXT,\n  creator TEXT,\n  status_updater TEXT,\n  project_cx TEXT,\n  purchaser TEXT,\n  created_date TEXT,\n  updated_date TEXT,\n  status_changed_date TEXT,\n  rfq_due_date TEXT,\n  first_accepted_date TEXT,\n  supplier_submitted_date TEXT,\n  grand_total TEXT,\n  supplier_submitter_name TEXT,\n  supplier_submitter_email TEXT,\n  supplier_comment TEXT,\n  supplier_gtc_comment TEXT,\n  deviations_comments TEXT\n);\n\nCREATE TABLE IF NOT EXISTS solt_tab (\n  id INTEGER PRIMARY KEY,\n  rfq_id INTEGER NOT NULL,\n  tab_index INTEGER NOT NULL,\n  name TEXT NOT NULL,\n  UNIQUE(rfq_id, tab_index)\n);\n\nCREATE TABLE IF NOT EXISTS solt_line (\n  id INTEGER PRIMARY KEY,\n  rfq_id INTEGER NOT NULL,\n  tab_index INTEGER NOT NULL,\n  line_no INTEGER NOT NULL,\n  item TEXT,\n  qty REAL,\n  uom TEXT,\n  unit_price REAL,\n  currency TEXT,\n  line_total REAL,\n  note TEXT\n);\n'
+
+def _read_json(path: str, default):
+    if not os.path.exists(path):
+        return default
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _write_json_atomic(path: str, data) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+    os.replace(tmp, path)
+
+
+def _extract_seed_from_template() -> Dict[str, Any]:
+    """Seed values by reading templates/index.html and extracting [data-field] text."""
+    template_path = os.path.join(BASE_DIR, "templates", "index.html")
+    if not os.path.exists(template_path):
+        return {}
+    with open(template_path, "r", encoding="utf-8", errors="ignore") as f:
+        soup = BeautifulSoup(f.read(), "html.parser")
+    seed: Dict[str, Any] = {}
+    for el in soup.select("[data-field]"):
+        field = el.get("data-field")
+        if not field:
+            continue
+        seed[field] = el.get_text(" ", strip=True)
+    return seed
+
+
+def ensure_seed_json() -> None:
+    seed = _extract_seed_from_template()
+
+    rfq_store = _read_json(RFQ_JSON, {})
+    if "1" not in rfq_store:
+        rec = {"id": 1}
+        # fill allowed fields from template seed (or blank)
+        for f in ALLOWED_FIELDS:
+            rec[f] = seed.get(f, "")
+        rec["rfq_number"] = rec.get("rfq_number") or "RFQ-0000-0"
+        rec["title"] = rec.get("title") or "RFQ — Demo Screen — Revision 0"
+        rec["status"] = rec.get("status") or "Received"
+        rfq_store["1"] = rec
+        _write_json_atomic(RFQ_JSON, rfq_store)
+
+    solt_store = _read_json(SOLT_JSON, {})
+    if "1" not in solt_store:
+        solt_store["1"] = {
+            "tabs": [
+                {"tab_index": 0, "name": "Section 1"},
+                {"tab_index": 1, "name": "Section 2"},
+            ],
+            "lines": [
+                {"id": 1, "rfq_id": 1, "tab_index": 0, "line_no": 1, "item": "Line item A", "qty": 1.0, "uom": "EA", "unit_price": 100.0, "currency": "USD", "line_total": 100.0, "note": ""},
+                {"id": 2, "rfq_id": 1, "tab_index": 0, "line_no": 2, "item": "Line item B", "qty": 2.0, "uom": "EA", "unit_price": 250.0, "currency": "USD", "line_total": 500.0, "note": ""},
+                {"id": 3, "rfq_id": 1, "tab_index": 1, "line_no": 1, "item": "Line item C", "qty": 5.0, "uom": "EA", "unit_price": 50.0,  "currency": "USD", "line_total": 250.0, "note": ""},
+            ],
+            "next_line_id": 4
+        }
+        _write_json_atomic(SOLT_JSON, solt_store)
+
 
 def create_app() -> Flask:
     app = Flask(__name__, instance_relative_config=True)
-    os.makedirs(app.instance_path, exist_ok=True)
-
-    def init_db():
-        db = sqlite3.connect(DB_PATH)
-        try:
-            db.executescript(SCHEMA_SQL)
-            db.commit()
-        finally:
-            db.close()
-
-    def ensure_seed():
-        init_db()
-        db = sqlite3.connect(DB_PATH)
-        db.row_factory = sqlite3.Row
-        try:
-            row = db.execute("SELECT id FROM rfq WHERE id=1").fetchone()
-            if not row:
-                seed = {
-                    "id": 1,
-                    "rfq_number": "RFQ-0000-0",
-                    "title": "RFQ — Demo Screen — Revision 0",
-                    "status": "Received",
-                }
-                cols = ", ".join(seed.keys())
-                qs = ", ".join(["?"] * len(seed))
-                db.execute(f"INSERT INTO rfq ({cols}) VALUES ({qs})", list(seed.values()))
-                db.commit()
-
-            # Seed Scope Order Lines tabs + a couple of demo lines (only if empty)
-            tab_count = db.execute("SELECT COUNT(*) AS c FROM solt_tab WHERE rfq_id=1").fetchone()["c"]
-            if tab_count == 0:
-                tabs = [(1, 0, "Equipment"), (1, 1, "Margin transparency")]
-                db.executemany("INSERT INTO solt_tab (rfq_id, tab_index, name) VALUES (?,?,?)", tabs)
-
-                lines = [
-                    (1, 0, 1, "Transformer refurbishment package", 1, "LOT", 3950000.00, "USD", 3950000.00, ""),
-                    (1, 0, 2, "On-site commissioning support", 1, "DAY", 50165.00, "USD", 50165.00, ""),
-                    (1, 1, 1, "Margin breakdown – overview (demo)", 1, "EA", 0.00, "USD", 0.00, "Tab 2 example row"),
-                ]
-                db.executemany(
-                    "INSERT INTO solt_line (rfq_id, tab_index, line_no, item, qty, uom, unit_price, currency, line_total, note) "
-                    "VALUES (?,?,?,?,?,?,?,?,?,?)",
-                    lines
-                )
-                db.commit()
-        finally:
-            db.close()
-
-    @app.before_request
-    def _open_db():
-        g.db = sqlite3.connect(DB_PATH)
-        g.db.row_factory = sqlite3.Row
-
-    @app.teardown_request
-    def _close_db(exc):
-        db = getattr(g, "db", None)
-        if db is not None:
-            db.c
-    @app.get("/api/rfq/<int:rfq_id>/solt")
-    def get_solt(rfq_id: int):
-        tabs = g.db.execute(
-            "SELECT tab_index, name FROM solt_tab WHERE rfq_id=? ORDER BY tab_index",
-            (rfq_id,),
-        ).fetchall()
-        lines = g.db.execute(
-            "SELECT * FROM solt_line WHERE rfq_id=? ORDER BY tab_index, line_no",
-            (rfq_id,),
-        ).fetchall()
-
-        grouped = {}
-        for r in lines:
-            d = dict(r)
-            grouped.setdefault(d["tab_index"], []).append(d)
-
-        return jsonify({
-            "rfq_id": rfq_id,
-            "tabs": [dict(t) for t in tabs],
-            "lines": grouped,
-        })
-
-    @app.patch("/api/rfq/<int:rfq_id>/solt/tab/<int:tab_index>")
-    def patch_solt_tab(rfq_id: int, tab_index: int):
-        payload = request.get_json(force=True, silent=True) or {}
-        name = (payload.get("name") or "").strip()
-        if not name:
-            return jsonify({"error": "name required"}), 400
-        g.db.execute(
-            "UPDATE solt_tab SET name=? WHERE rfq_id=? AND tab_index=?",
-            (name, rfq_id, tab_index),
-        )
-        g.db.commit()
-        tab = g.db.execute(
-            "SELECT tab_index, name FROM solt_tab WHERE rfq_id=? AND tab_index=?",
-            (rfq_id, tab_index),
-        ).fetchone()
-        if not tab:
-            return jsonify({"error": "not found"}), 404
-        return jsonify(dict(tab))
-
-    @app.post("/api/rfq/<int:rfq_id>/solt/line")
-    def add_solt_line(rfq_id: int):
-        payload = request.get_json(force=True, silent=True) or {}
-        tab_index = int(payload.get("tab_index", 0))
-        item = payload.get("item")
-        qty = payload.get("qty")
-        uom = payload.get("uom")
-        unit_price = payload.get("unit_price")
-        currency = payload.get("currency")
-        note = payload.get("note")
-
-        # next line number in this tab
-        row = g.db.execute(
-            "SELECT COALESCE(MAX(line_no), 0) AS m FROM solt_line WHERE rfq_id=? AND tab_index=?",
-            (rfq_id, tab_index),
-        ).fetchone()
-        line_no = int(row["m"]) + 1
-
-        def to_float(x):
-            try:
-                return float(x)
-            except Exception:
-                return None
-
-        qty_f = to_float(qty) or 0.0
-        unit_f = to_float(unit_price) or 0.0
-        total = qty_f * unit_f
-
-        g.db.execute(
-            "INSERT INTO solt_line (rfq_id, tab_index, line_no, item, qty, uom, unit_price, currency, line_total, note) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?)",
-            (rfq_id, tab_index, line_no, item, qty_f, uom, unit_f, currency, total, note),
-        )
-        g.db.commit()
-        line_id = g.db.execute("SELECT last_insert_rowid() AS id").fetchone()["id"]
-        line = g.db.execute("SELECT * FROM solt_line WHERE id=?", (line_id,)).fetchone()
-        return jsonify(dict(line)), 201
-
-    @app.patch("/api/rfq/<int:rfq_id>/solt/line/<int:line_id>")
-    def patch_solt_line(rfq_id: int, line_id: int):
-        payload = request.get_json(force=True, silent=True) or {}
-
-        allowed = {"item","qty","uom","unit_price","currency","note","line_total","line_no","tab_index"}
-        updates = {k: payload[k] for k in payload.keys() if k in allowed}
-        if not updates:
-            return jsonify({"error": "no valid fields"}), 400
-
-        # Recalculate line_total if qty/unit_price edited (unless caller explicitly sets line_total)
-        def to_float(x):
-            try:
-                return float(x)
-            except Exception:
-                return None
-
-        if "line_total" not in updates and ("qty" in updates or "unit_price" in updates):
-            existing = g.db.execute("SELECT qty, unit_price FROM solt_line WHERE id=? AND rfq_id=?", (line_id, rfq_id)).fetchone()
-            if existing:
-                qty_f = to_float(updates.get("qty", existing["qty"])) or 0.0
-                unit_f = to_float(updates.get("unit_price", existing["unit_price"])) or 0.0
-                updates["line_total"] = qty_f * unit_f
-
-        sets = ", ".join([f"{k}=?" for k in updates.keys()])
-        values = list(updates.values()) + [line_id, rfq_id]
-        g.db.execute(f"UPDATE solt_line SET {sets} WHERE id=? AND rfq_id=?", values)
-        g.db.commit()
-        line = g.db.execute("SELECT * FROM solt_line WHERE id=? AND rfq_id=?", (line_id, rfq_id)).fetchone()
-        if not line:
-            return jsonify({"error": "not found"}), 404
-        return jsonify(dict(line))
-
-    @app.delete("/api/rfq/<int:rfq_id>/solt/line/<int:line_id>")
-    def delete_solt_line(rfq_id: int, line_id: int):
-        g.db.execute("DELETE FROM solt_line WHERE id=? AND rfq_id=?", (line_id, rfq_id))
-        g.db.commit()
-        return jsonify({"ok": True})
-
-lose()
-
-    ensure_seed()
+    os.makedirs(DATA_DIR, exist_ok=True)
+    ensure_seed_json()
 
     @app.get("/")
     def index():
@@ -200,12 +91,16 @@ lose()
     def health():
         return jsonify({"ok": True})
 
+    # --------------------
+    # RFQ (flat fields)
+    # --------------------
     @app.get("/api/rfq/<int:rfq_id>")
     def get_rfq(rfq_id: int):
-        row = g.db.execute("SELECT * FROM rfq WHERE id=?", (rfq_id,)).fetchone()
-        if not row:
+        store = _read_json(RFQ_JSON, {})
+        rec = store.get(str(rfq_id))
+        if not rec:
             return jsonify({"error": "not found"}), 404
-        return jsonify(dict(row))
+        return jsonify(rec)
 
     @app.patch("/api/rfq/<int:rfq_id>")
     def patch_rfq(rfq_id: int):
@@ -214,14 +109,147 @@ lose()
         if not updates:
             return jsonify({"error": "no valid fields"}), 400
 
-        sets = ", ".join([f"{k}=?" for k in updates.keys()])
-        values = list(updates.values()) + [rfq_id]
-        g.db.execute(f"UPDATE rfq SET {sets} WHERE id=?", values)
-        g.db.commit()
-        row = g.db.execute("SELECT * FROM rfq WHERE id=?", (rfq_id,)).fetchone()
-        return jsonify(dict(row))
+        store = _read_json(RFQ_JSON, {})
+        key = str(rfq_id)
+        rec = store.get(key, {"id": rfq_id})
+        rec.update(updates)
+        store[key] = rec
+        _write_json_atomic(RFQ_JSON, store)
+        return jsonify(rec)
+
+    # --------------------
+    # SOLT (tabs + lines)
+    # --------------------
+    def _get_solt_record(rfq_id: int) -> Dict[str, Any]:
+        store = _read_json(SOLT_JSON, {})
+        return store.get(str(rfq_id), {"tabs": [], "lines": [], "next_line_id": 1})
+
+    def _save_solt_record(rfq_id: int, rec: Dict[str, Any]) -> Dict[str, Any]:
+        store = _read_json(SOLT_JSON, {})
+        store[str(rfq_id)] = rec
+        _write_json_atomic(SOLT_JSON, store)
+        return rec
+
+    @app.get("/api/rfq/<int:rfq_id>/solt")
+    def get_solt(rfq_id: int):
+        rec = _get_solt_record(rfq_id)
+        # group lines by tab_index to match previous response shape
+        grouped: Dict[int, List[Dict[str, Any]]] = {}
+        for line in rec.get("lines", []):
+            grouped.setdefault(int(line.get("tab_index", 0)), []).append(line)
+        # sort lines within each group
+        for k in grouped:
+            grouped[k] = sorted(grouped[k], key=lambda x: (int(x.get("line_no", 0)), int(x.get("id", 0))))
+        tabs = sorted(rec.get("tabs", []), key=lambda t: int(t.get("tab_index", 0)))
+        return jsonify({"rfq_id": rfq_id, "tabs": tabs, "lines": grouped})
+
+    @app.patch("/api/rfq/<int:rfq_id>/solt/tab/<int:tab_index>")
+    def patch_solt_tab(rfq_id: int, tab_index: int):
+        payload = request.get_json(force=True, silent=True) or {}
+        name = (payload.get("name") or "").strip()
+        if not name:
+            return jsonify({"error": "name required"}), 400
+
+        rec = _get_solt_record(rfq_id)
+        tabs = rec.setdefault("tabs", [])
+        tab = next((t for t in tabs if int(t.get("tab_index", -1)) == tab_index), None)
+        if not tab:
+            tab = {"tab_index": tab_index, "name": name}
+            tabs.append(tab)
+        else:
+            tab["name"] = name
+        _save_solt_record(rfq_id, rec)
+        return jsonify(tab)
+
+    @app.post("/api/rfq/<int:rfq_id>/solt/line")
+    def add_solt_line(rfq_id: int):
+        payload = request.get_json(force=True, silent=True) or {}
+        tab_index = int(payload.get("tab_index", 0))
+        item = payload.get("item")
+        uom = payload.get("uom")
+        currency = payload.get("currency")
+        note = payload.get("note", "")
+
+        def to_float(x):
+            try:
+                return float(x)
+            except Exception:
+                return 0.0
+
+        qty_f = to_float(payload.get("qty"))
+        unit_f = to_float(payload.get("unit_price"))
+        total = qty_f * unit_f
+
+        rec = _get_solt_record(rfq_id)
+        lines = rec.setdefault("lines", [])
+
+        # next line number in this tab
+        existing = [l for l in lines if int(l.get("tab_index", 0)) == tab_index]
+        line_no = (max([int(l.get("line_no", 0)) for l in existing], default=0) + 1)
+
+        line_id = int(rec.get("next_line_id", 1))
+        rec["next_line_id"] = line_id + 1
+
+        new_line = {
+            "id": line_id,
+            "rfq_id": rfq_id,
+            "tab_index": tab_index,
+            "line_no": line_no,
+            "item": item,
+            "qty": qty_f,
+            "uom": uom,
+            "unit_price": unit_f,
+            "currency": currency,
+            "line_total": total,
+            "note": note,
+        }
+        lines.append(new_line)
+        _save_solt_record(rfq_id, rec)
+        return jsonify(new_line), 201
+
+    @app.patch("/api/rfq/<int:rfq_id>/solt/line/<int:line_id>")
+    def patch_solt_line(rfq_id: int, line_id: int):
+        payload = request.get_json(force=True, silent=True) or {}
+        allowed = {"item","qty","uom","unit_price","currency","note","line_total","line_no","tab_index"}
+        updates = {k: payload[k] for k in payload.keys() if k in allowed}
+        if not updates:
+            return jsonify({"error": "no valid fields"}), 400
+
+        def to_float(x):
+            try:
+                return float(x)
+            except Exception:
+                return 0.0
+
+        rec = _get_solt_record(rfq_id)
+        lines = rec.setdefault("lines", [])
+        line = next((l for l in lines if int(l.get("id", -1)) == line_id), None)
+        if not line:
+            return jsonify({"error": "not found"}), 404
+
+        # apply updates
+        for k, v in updates.items():
+            line[k] = v
+
+        # recalc line_total if qty/unit_price changed and caller didn't explicitly set line_total
+        if "line_total" not in updates and ("qty" in updates or "unit_price" in updates):
+            qty_f = to_float(line.get("qty"))
+            unit_f = to_float(line.get("unit_price"))
+            line["line_total"] = qty_f * unit_f
+
+        _save_solt_record(rfq_id, rec)
+        return jsonify(line)
+
+    @app.delete("/api/rfq/<int:rfq_id>/solt/line/<int:line_id>")
+    def delete_solt_line(rfq_id: int, line_id: int):
+        rec = _get_solt_record(rfq_id)
+        lines = rec.setdefault("lines", [])
+        rec["lines"] = [l for l in lines if int(l.get("id", -1)) != line_id]
+        _save_solt_record(rfq_id, rec)
+        return jsonify({"ok": True})
 
     return app
+
 
 app = create_app()
 
